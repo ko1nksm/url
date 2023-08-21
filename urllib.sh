@@ -5,6 +5,7 @@
 # https://github.com/ko1nksm/sh-urllib
 ##########################################################################
 urlprintf() {
+  [ $# -eq 0 ] && echo "urlprintf: not enough arguments" >&2 && return 1
   {
     shift
     LC_ALL=C awk '
