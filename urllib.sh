@@ -9,9 +9,9 @@ urlprintf() {
   {
     shift
     LC_ALL=C awk '
-      function urlencode(str,  i, len, ret) {
+      function encode(map, str,   i, len, ret) {
         len = length(str); ret = ""
-        for (i = 1; i <= len; i++) ret = ret url[substr(str, i, 1)]
+        for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
         return ret
       }
       BEGIN {
@@ -19,7 +19,7 @@ urlprintf() {
           k = sprintf("%c", i); v = sprintf("%%%02X", i)
           url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
         }
-        for (i = 1; i < ARGC; i++) print urlencode(ARGV[i])
+        for (i = 1; i < ARGC; i++) print encode(url, ARGV[i])
       }
     ' "$@"
   } | (
@@ -38,14 +38,9 @@ urlprintf() {
 ##########################################################################
 urlbuild() {
   LC_ALL=C awk '
-    function uriencode(str,  i, len, ret) {
+    function encode(map, str,   i, len, ret) {
       len = length(str); ret = ""
-      for (i = 1; i <= len; i++) ret = ret uri[substr(str, i, 1)]
-      return ret
-    }
-    function urlencode(str,  i, len, ret) {
-      len = length(str); ret = ""
-      for (i = 1; i <= len; i++) ret = ret url[substr(str, i, 1)]
+      for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
       return ret
     }
     BEGIN {
@@ -54,18 +49,18 @@ urlbuild() {
         uri[k] = (k ~ /[A-Za-z0-9_.!~*\47();\/?:@&=+$,#-]/) ? k : v
         url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
       }
-      path = uriencode(ARGV[1]); params = ""; fragment = ""
+      path = encode(uri, ARGV[1]); params = fragment = ""
       for (i = 2; i < ARGC; i++) {
         if (sub(/^-/, "", ARGV[i])) {
           if (params) params = params "&"
-          params = params urlencode(ARGV[i]) "=" urlencode(ARGV[++i])
+          params = params encode(url, ARGV[i]) "=" encode(url, ARGV[++i])
         } else if (sub(/^=/, "", ARGV[i])) {
-          params = params urlencode(ARGV[i])
+          params = params encode(url, ARGV[i])
         } else if (sub(/^#/, "", ARGV[i])) {
-          fragment = fragment "#" urlencode(ARGV[i])
+          fragment = fragment "#" encode(url, ARGV[i])
         }
       }
-      printf "%s%s%s\n", path, (params ? "?" params: ""), fragment
+      printf "%s%s%s\n", path, (params ? "?" : "") params, fragment
     }
   ' "$@"
 }
