@@ -4,6 +4,12 @@
 # sh-urllib is released under the BSD Zero Clause License
 # https://github.com/ko1nksm/sh-urllib
 ##########################################################################
+
+# urlprintf [-s | -n | -f] [--] FORMAT [ARGUMENTS]...
+#   -s: Use + instead of %20
+#   -n: Normalize newline to \r\n
+#   -f: form-urlencoded (equivalent to -sn)
+#   FORMAT: printf format
 urlprintf() {
   [ $# -eq 0 ] && echo "urlprintf: not enough arguments" >&2 && return 1
   _urllib_urlencode printf "$@" | (
@@ -23,6 +29,12 @@ urlprintf() {
   )
 }
 
+# urlbuild [-s | -n | -f] [--] URLPATH [ARGUMENTS]...
+#   -s: Use + instead of %20
+#   -n: Normalize newline to \r\n
+#   -f: form-urlencoded (equivalent to -sn)
+#   URLPATH: url path
+#   ARGUMENTS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
 urlbuild() {
   _urllib_urlencode build "$@"
 }
