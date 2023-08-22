@@ -10,7 +10,6 @@
 #   -n: Normalize newline to \r\n
 #   FORMAT: printf format
 urlprintf() {
-  [ $# -eq 0 ] && echo "urlprintf: not enough arguments" >&2 && return 1
   _urllib_urlencode printf "$@" | (
     while [ $# -gt 0 ]; do
       case $1 in
@@ -19,6 +18,10 @@ urlprintf() {
         *) break ;;
       esac
     done
+    if [ $# -eq 0 ]; then
+      echo "urlprintf: not enough arguments" >&2
+      return 1
+    fi
     set -- "$1"
     while IFS= read -r line; do
       set -- "$@" "$line"
