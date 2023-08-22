@@ -1,7 +1,7 @@
 # shellcheck shell=sh
 
 ##########################################################################
-# Base64 decoder is released under the BSD Zero Clause License
+# urlprintf is released under the BSD Zero Clause License
 # https://github.com/ko1nksm/sh-urllib
 ##########################################################################
 urlprintf() {
@@ -33,7 +33,7 @@ urlprintf() {
 }
 
 ##########################################################################
-# Base64 decoder is released under the BSD Zero Clause License
+# urlbuild is released under the BSD Zero Clause License
 # https://github.com/ko1nksm/sh-urllib
 ##########################################################################
 urlbuild() {
