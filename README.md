@@ -7,20 +7,18 @@ URL build and URL encoding library for portable shell scripts
 ### urlprintf
 
 ```txt
-urlprintf [-s | -n | -f] [--] FORMAT [ARGUMENTS]...
+urlprintf [-s | -n] [--] FORMAT [ARGUMENTS]...
   -s: Use + instead of %20
   -n: Normalize newline to \r\n
-  -f: form-urlencoded (equivalent to -sn)
   FORMAT: printf format
 ```
 
 ### urlbuild
 
 ```txt
-urlbuild [-s | -n | -f] [--] URLPATH [ARGUMENTS]...
+urlbuild [-s | -n] [--] URLPATH [ARGUMENTS]...
   -s: Use + instead of %20
   -n: Normalize newline to \r\n
-  -f: form-urlencoded (equivalent to -sn)
   URLPATH: url path
   ARGUMENTS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
 ```

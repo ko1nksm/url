@@ -5,10 +5,9 @@
 # https://github.com/ko1nksm/sh-urllib
 ##########################################################################
 
-# urlprintf [-s | -n | -f] [--] FORMAT [ARGUMENTS]...
+# urlprintf [-s | -n] [--] FORMAT [ARGUMENTS]...
 #   -s: Use + instead of %20
 #   -n: Normalize newline to \r\n
-#   -f: form-urlencoded (equivalent to -sn)
 #   FORMAT: printf format
 urlprintf() {
   [ $# -eq 0 ] && echo "urlprintf: not enough arguments" >&2 && return 1
@@ -29,10 +28,9 @@ urlprintf() {
   )
 }
 
-# urlbuild [-s | -n | -f] [--] URLPATH [ARGUMENTS]...
+# urlbuild [-s | -n] [--] URLPATH [ARGUMENTS]...
 #   -s: Use + instead of %20
 #   -n: Normalize newline to \r\n
-#   -f: form-urlencoded (equivalent to -sn)
 #   URLPATH: url path
 #   ARGUMENTS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
 urlbuild() {
@@ -52,7 +50,6 @@ _urllib_urlencode() {
       while (ARGV[i] ~ /^-/ && i < ARGC) {
         if (ARGV[i] ~ /s/) space = 1
         if (ARGV[i] ~ /n/) newline = 1
-        if (ARGV[i] ~ /f/) space = newline = 1
         if (ARGV[i++] == "--") break
       }
       return i
