@@ -21,52 +21,6 @@ Usage: url <-p | --printf> [-s | -n] [--] FORMAT [ARGUMENTS]...
 HERE
 }
 
-# urlprintf FORMAT [ARGUMENTS]...
-#
-#   FORMAT: printf format
-#   ARGUMENTS: printf argument to be URL-encoded
-#
-#   Variables:
-#     SHURL_SPACE: A character to use instead of %20
-#     SHURL_EOL: Characters used on new lines
-urlprintf() {
-  {
-    shift
-    LC_ALL=C awk -v space="$SHURL_SPACE" -v newline="$SHURL_EOL" '
-      function encode(map, str,   i, len, ret) {
-        len = length(str); ret = ""
-        for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
-        return ret
-      }
-
-      function fix_newline(newline,   i) {
-        for (i = 1; i < ARGC; i++) gsub(/\r\n/, "\n", ARGV[i])
-        for (i = 1; i < ARGC; i++) gsub(/\n/, newline, ARGV[i])
-      }
-
-      BEGIN {
-        for(i = 0; i < 256; i++) {
-          k = sprintf("%c", i); v = sprintf("%%%02X", i)
-          url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
-        }
-        if (length(space) > 0) uri[" "] = url[" "] = space
-        if (length(newline) > 0) fix_newline(newline)
-
-        for (i = 1; i < ARGC; i++) {
-          print encode(url, ARGV[i])
-        }
-      }
-    ' "$@"
-  } | (
-    set -- "$1"
-    while IFS= read -r line; do
-      set -- "$@" "$line"
-    done
-    # shellcheck disable=SC2059
-    printf -- "$@"
-  )
-}
-
 # urlbuild URLPATH [ARGUMENTS]...
 #
 #   URLPATH: url path
@@ -113,6 +67,52 @@ urlbuild() {
       print path params fragment
     }
   ' "$@"
+}
+
+# urlprintf FORMAT [ARGUMENTS]...
+#
+#   FORMAT: printf format
+#   ARGUMENTS: printf argument to be URL-encoded
+#
+#   Variables:
+#     SHURL_SPACE: A character to use instead of %20
+#     SHURL_EOL: Characters used on new lines
+urlprintf() {
+  {
+    shift
+    LC_ALL=C awk -v space="$SHURL_SPACE" -v newline="$SHURL_EOL" '
+      function encode(map, str,   i, len, ret) {
+        len = length(str); ret = ""
+        for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
+        return ret
+      }
+
+      function fix_newline(newline,   i) {
+        for (i = 1; i < ARGC; i++) gsub(/\r\n/, "\n", ARGV[i])
+        for (i = 1; i < ARGC; i++) gsub(/\n/, newline, ARGV[i])
+      }
+
+      BEGIN {
+        for(i = 0; i < 256; i++) {
+          k = sprintf("%c", i); v = sprintf("%%%02X", i)
+          url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
+        }
+        if (length(space) > 0) uri[" "] = url[" "] = space
+        if (length(newline) > 0) fix_newline(newline)
+
+        for (i = 1; i < ARGC; i++) {
+          print encode(url, ARGV[i])
+        }
+      }
+    ' "$@"
+  } | (
+    set -- "$1"
+    while IFS= read -r line; do
+      set -- "$@" "$line"
+    done
+    # shellcheck disable=SC2059
+    printf -- "$@"
+  )
 }
 
 SHURL_SPACE='' SHURL_EOL='' mode='build'
