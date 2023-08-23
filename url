@@ -1,0 +1,133 @@
+#!/bin/sh
+
+##########################################################################
+# url is released under the BSD Zero Clause License
+# https://github.com/ko1nksm/sh-urllib
+##########################################################################
+
+set -eu
+
+usage() {
+  cat << 'HERE'
+Usage: url                 [-s | -n] [--] URLPATH [PARAMETERS]...
+Usage: url <-p | --printf> [-s | -n] [--] FORMAT [ARGUMENTS]...
+
+  -s                Use + instead of %20
+  -n                Normalize newline to \r\n
+  -p, --printf      printf mode
+
+  URLPATH: url path
+  PARAMETERS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
+HERE
+}
+
+# urlprintf FORMAT [ARGUMENTS]...
+#
+#   FORMAT: printf format
+#   ARGUMENTS: printf argument to be URL-encoded
+#
+#   Variables:
+#     SHURL_SPACE: A character to use instead of %20
+#     SHURL_EOL: Characters used on new lines
+urlprintf() {
+  {
+    shift
+    LC_ALL=C awk -v space="$SHURL_SPACE" -v newline="$SHURL_EOL" '
+      function encode(map, str,   i, len, ret) {
+        len = length(str); ret = ""
+        for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
+        return ret
+      }
+
+      function fix_newline(newline,   i) {
+        for (i = 1; i < ARGC; i++) gsub(/\r\n/, "\n", ARGV[i])
+        for (i = 1; i < ARGC; i++) gsub(/\n/, newline, ARGV[i])
+      }
+
+      BEGIN {
+        for(i = 0; i < 256; i++) {
+          k = sprintf("%c", i); v = sprintf("%%%02X", i)
+          url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
+        }
+        if (length(space) > 0) uri[" "] = url[" "] = space
+        if (length(newline) > 0) fix_newline(newline)
+
+        for (i = 1; i < ARGC; i++) {
+          print encode(url, ARGV[i])
+        }
+      }
+    ' "$@"
+  } | (
+    set -- "$1"
+    while IFS= read -r line; do
+      set -- "$@" "$line"
+    done
+    # shellcheck disable=SC2059
+    printf -- "$@"
+  )
+}
+
+# urlbuild URLPATH [ARGUMENTS]...
+#
+#   URLPATH: url path
+#   ARGUMENTS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
+#
+#   Variables:
+#     SHURL_SPACE: A character to use instead of %20
+#     SHURL_EOL: Characters used on new lines
+urlbuild() {
+  LC_ALL=C awk -v space="$SHURL_SPACE" -v newline="$SHURL_EOL" '
+    function encode(map, str,   i, len, ret) {
+      len = length(str); ret = ""
+      for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
+      return ret
+    }
+
+    function fix_newline(newline,   i) {
+      for (i = 1; i < ARGC; i++) gsub(/\r\n/, "\n", ARGV[i])
+      for (i = 1; i < ARGC; i++) gsub(/\n/, newline, ARGV[i])
+    }
+
+    BEGIN {
+      for(i = 0; i < 256; i++) {
+        k = sprintf("%c", i); v = sprintf("%%%02X", i)
+        uri[k] = (k ~ /[A-Za-z0-9_.!~*\47();\/?:@&=+$,#-]/) ? k : v
+        url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
+      }
+      if (length(space) > 0) uri[" "] = url[" "] = space
+      if (length(newline) > 0) fix_newline(newline)
+
+      path = encode(uri, ARGV[1]); params = fragment = ""
+      for (i = 2; i < ARGC; i++) {
+        if (sub(/^-/, "", ARGV[i])) {
+          if (params) params = params "&"
+          params = params encode(url, ARGV[i]) "=" encode(url, ARGV[++i])
+        } else if (sub(/^=/, "", ARGV[i])) {
+          params = params encode(url, ARGV[i])
+        } else if (sub(/^#/, "", ARGV[i])) {
+          fragment = fragment "#" encode(url, ARGV[i])
+        }
+      }
+
+      if (length(path) > 0 && length(params) > 0) path = path "?"
+      print path params fragment
+    }
+  ' "$@"
+}
+
+SHURL_SPACE='' SHURL_EOL='' mode='build'
+while [ $# -gt 0 ]; do
+  case $1 in
+    -sn | -ns) SHURL_SPACE='+' SHURL_EOL='\r\n' ;;
+    -s) SHURL_SPACE='+' ;;
+    -n) SHURL_EOL='\r\n' ;;
+    -p | --printf) mode='printf' ;;
+    -h | --help) usage && exit 0 ;;
+    --) shift && break ;;
+    -*) echo "Unknown option $1" >&2 && exit 1 ;;
+    *) break ;;
+  esac
+  shift
+done
+
+"url${mode}" "$@"
