@@ -1,6 +1,7 @@
 # url
 
-URL builder with URL encoding for portable shell scripts
+URL builder with URL encoding for CLI and portable shell scripts.
+It is suitable for building URLs for `curl`, `wget`, etc.
 
 ## Usage
 
