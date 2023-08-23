@@ -81,7 +81,8 @@ _urllib_urlencode() {
           fragment = fragment "#" encode(url, ARGV[i])
         }
       }
-      printf "%s%s%s\n", path, (params ? "?" : "") params, fragment
+      if (length(path) > 0 && length(params) > 0) path = path "?"
+      print path params fragment
     }
 
     BEGIN {
