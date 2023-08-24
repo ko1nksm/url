@@ -33,16 +33,16 @@ HERE
 #     SHURL_SPACE: A character to use instead of %20
 #     SHURL_EOL: Characters used on new lines
 urlbuild() {
-  LC_ALL=C awk -v space="$SHURL_SPACE" -v newline="$SHURL_EOL" '
+  LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
     function encode(map, str,   i, len, ret) {
       len = length(str); ret = ""
       for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
       return ret
     }
 
-    function fix_newline(newline,   i) {
+    function fix_eol(eol,   i) {
       for (i = 1; i < ARGC; i++) gsub(/\r\n/, "\n", ARGV[i])
-      for (i = 1; i < ARGC; i++) gsub(/\n/, newline, ARGV[i])
+      for (i = 1; i < ARGC; i++) gsub(/\n/, eol, ARGV[i])
     }
 
     BEGIN {
@@ -52,7 +52,7 @@ urlbuild() {
         url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
       }
       if (length(space) > 0) uri[" "] = url[" "] = space
-      if (length(newline) > 0) fix_newline(newline)
+      if (length(eol) > 0) fix_eol(eol)
 
       path = encode(uri, ARGV[1]); params = fragment = ""
       for (i = 2; i < ARGC; i++) {
@@ -81,18 +81,19 @@ urlbuild() {
 #     SHURL_SPACE: A character to use instead of %20
 #     SHURL_EOL: Characters used on new lines
 urlprintf() {
+  [ $# -le 1 ] && return 0
   {
     shift
-    LC_ALL=C awk -v space="$SHURL_SPACE" -v newline="$SHURL_EOL" '
+    LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
       function encode(map, str,   i, len, ret) {
         len = length(str); ret = ""
         for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
         return ret
       }
 
-      function fix_newline(newline,   i) {
+      function fix_eol(eol,   i) {
         for (i = 1; i < ARGC; i++) gsub(/\r\n/, "\n", ARGV[i])
-        for (i = 1; i < ARGC; i++) gsub(/\n/, newline, ARGV[i])
+        for (i = 1; i < ARGC; i++) gsub(/\n/, eol, ARGV[i])
       }
 
       BEGIN {
@@ -101,7 +102,7 @@ urlprintf() {
           url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
         }
         if (length(space) > 0) uri[" "] = url[" "] = space
-        if (length(newline) > 0) fix_newline(newline)
+        if (length(eol) > 0) fix_eol(eol)
 
         for (i = 1; i < ARGC; i++) {
           print encode(url, ARGV[i])
