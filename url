@@ -9,15 +9,18 @@ set -eu
 
 usage() {
   cat << 'HERE'
-Usage: url                 [-s | -n] [--] URLPATH [PARAMETERS]...
-Usage: url <-p | --printf> [-s | -n] [--] FORMAT [ARGUMENTS]...
-
-  -s                Use + instead of %20
-  -n                Normalize newline to \r\n
-  -p, --printf      printf mode
+Usage: url    [-SN] [--] URLPATH [PARAMETERS]...
+Usage: url -p [-SN] [--] FORMAT  [ARGUMENTS]...
 
   URLPATH: url path
   PARAMETERS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
+
+Options:
+  -p, --printf      printf mode
+
+Character conversion Options:
+  -S                Use + instead of %20
+  -N                Normalize newline to \r\n
 HERE
 }
 
@@ -118,9 +121,9 @@ urlprintf() {
 SHURL_SPACE='' SHURL_EOL='' mode='build'
 while [ $# -gt 0 ]; do
   case $1 in
-    -sn | -ns) SHURL_SPACE='+' SHURL_EOL='\r\n' ;;
-    -s) SHURL_SPACE='+' ;;
-    -n) SHURL_EOL='\r\n' ;;
+    -SN | -NS) SHURL_SPACE='+' SHURL_EOL='\r\n' ;;
+    -S) SHURL_SPACE='+' ;;
+    -N) SHURL_EOL='\r\n' ;;
     -p | --printf) mode='printf' ;;
     -h | --help) usage && exit 0 ;;
     --) shift && break ;;
