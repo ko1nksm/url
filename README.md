@@ -8,15 +8,22 @@ It is suitable for building URLs for `curl`, `wget`, etc.
 **The specification is not yet stable.**
 
 ```txt
-Usage: url                 [-s | -n] [--] URLPATH [PARAMETERS]...
-Usage: url <-p | --printf> [-s | -n] [--] FORMAT [ARGUMENTS]...
-
-  -s                Use + instead of %20
-  -n                Normalize newline to \r\n
-  -p, --printf      printf mode
+Usage: url                   [-nSN] [--] URLPATH [PARAMETERS]...
+Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
 
   URLPATH: url path
   PARAMETERS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
+
+Global options:
+  -n                      Do not print the trailing newline character
+  -p, --printf            printf mode (default: build mode)
+
+Printf mode options:
+  -j, --join DELIMITER    Joins strings with the delimiter (default: '\n')
+
+Character conversion Options:
+  -S  Use + instead of %20
+  -N  Normalize newline to \r\n
 ```
 
 ## Use as a library
