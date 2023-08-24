@@ -26,6 +26,20 @@ Character conversion Options:
   -N  Normalize newline to \r\n
 ```
 
+## Example
+
+```console
+$ url "http://example.com/" -param1 あ -param2 "か" "#さ"
+http://example.com/?param1=%E3%81%82&param2=%E3%81%8B#%E3%81%95
+
+$ url "http://example.com/" =あいうえお
+http://example.com/?%E3%81%82%E3%81%84%E3%81%86%E3%81%88%E3%81%8A
+
+$ url --printf "http://example.com/?param1=%s&param2=%s\n" あ ａ ア Ａ
+http://example.com/?param1=%E3%81%82&param2=%EF%BD%81
+http://example.com/?param1=%E3%82%A2&param2=%EF%BC%A1
+```
+
 ## Use as a library
 
 License is 0BSD. Feel free to copy and use the functions.
@@ -53,18 +67,4 @@ urlprintf FORMAT [ARGUMENTS]...
   Variables:
     SHURL_SPACE: A character to use instead of %20
     SHURL_EOL: Characters used on new lines
-```
-
-## Example
-
-```console
-$ url "http://example.com/" -param1 あ -param2 "か" "#さ"
-http://example.com/?param1=%E3%81%82&param2=%E3%81%8B#%E3%81%95
-
-$ url "http://example.com/" =あいうえお
-http://example.com/?%E3%81%82%E3%81%84%E3%81%86%E3%81%88%E3%81%8A
-
-$ url --printf "http://example.com/?param1=%s&param2=%s\n" あ ａ ア Ａ
-http://example.com/?param1=%E3%81%82&param2=%EF%BD%81
-http://example.com/?param1=%E3%82%A2&param2=%EF%BC%A1
 ```
