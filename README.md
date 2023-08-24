@@ -41,7 +41,7 @@ http://example.com/?%E3%81%82%E3%81%84%E3%81%86%E3%81%88%E3%81%8A
 printf mode:
 
 ```console
-$ url --printf "http://example.com/?param1=%s&param2=%s\n" あ ａ ア Ａ
+$ url --printf "http://example.com/?param1=%s&param2=%s" あ ａ ア Ａ
 http://example.com/?param1=%E3%81%82&param2=%EF%BD%81
 http://example.com/?param1=%E3%82%A2&param2=%EF%BC%A1
 ```
