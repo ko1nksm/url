@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC2059
 
 ##########################################################################
 # url is released under the BSD Zero Clause License
@@ -9,19 +10,49 @@ set -eu
 
 usage() {
   cat << 'HERE'
-Usage: url    [-SN] [--] URLPATH [PARAMETERS]...
-Usage: url -p [-SN] [--] FORMAT  [ARGUMENTS]...
+Usage: url                   [-nSN] [--] URLPATH [PARAMETERS]...
+Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
 
   URLPATH: url path
   PARAMETERS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
 
-Options:
-  -p, --printf      printf mode
+Global options:
+  -n                      Do not print the trailing newline character
+  -p, --printf            printf mode (default: build mode)
+
+Printf mode options:
+  -j, --join DELIMITER    Joins strings with the delimiter (default: '\n')
 
 Character conversion Options:
-  -S                Use + instead of %20
-  -N                Normalize newline to \r\n
+  -S  Use + instead of %20
+  -N  Normalize newline to \r\n
 HERE
+}
+
+replace_all() {
+  set -- "$1" "$2$3" "$3" "$4" ""
+  while [ "$2" ]; do
+    set -- "$1" "${2#*"$3"}" "$3" "$4" "$5${2%%"$3"*}$4"
+  done
+  eval "$1=\${5%\"\$4\"}"
+}
+
+do_urlbuild() {
+  url=$(urlbuild "$@")
+  printf '%s' "$url"
+  [ "$SHURL_NONEWLINE" ] || echo
+}
+
+do_urlprintf() {
+  format=$1 && shift
+  urlprintf "${SHURL_DELIMITER}${format}" "$@" | {
+    # shellcheck disable=SC2059
+    delimiter=$(printf "${SHURL_DELIMITER}_")
+    skip=$((${#delimiter} - 1))
+    [ "$skip" -gt 0 ] && dd bs="$skip" count=1 >/dev/null 2>&1
+    cat
+  }
+  [ "$SHURL_NONEWLINE" ] || echo
 }
 
 # urlbuild URLPATH [ARGUMENTS]...
@@ -114,18 +145,20 @@ urlprintf() {
     while IFS= read -r line; do
       set -- "$@" "$line"
     done
-    # shellcheck disable=SC2059
     printf -- "$@"
   )
 }
 
-SHURL_SPACE='' SHURL_EOL='' mode='build'
+SHURL_SPACE='' SHURL_EOL='' SHURL_DELIMITER='\n' SHURL_NONEWLINE=''
+mode='build'
 while [ $# -gt 0 ]; do
   case $1 in
     -SN | -NS) SHURL_SPACE='+' SHURL_EOL='\r\n' ;;
     -S) SHURL_SPACE='+' ;;
     -N) SHURL_EOL='\r\n' ;;
+    -n) SHURL_NONEWLINE=1 ;;
     -p | --printf) mode='printf' ;;
+    -j | --join) SHURL_DELIMITER=${2:-} && shift ;;
     -h | --help) usage && exit 0 ;;
     --) shift && break ;;
     -*) echo "Unknown option $1" >&2 && exit 1 ;;
@@ -134,4 +167,12 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-"url${mode}" "$@"
+sanitize() {
+  replace_all sanitize "$2" '%' '%%'
+  sanitize=$(printf "$sanitize"_) && sanitize=${sanitize%_}
+  replace_all sanitize "$sanitize" '%' '%%'
+  replace_all "$1" "$sanitize" "\\" "\\\\"
+}
+[ "$SHURL_DELIMITER" = '\n' ] || sanitize SHURL_DELIMITER "$SHURL_DELIMITER"
+
+"do_url${mode}" "$@"
