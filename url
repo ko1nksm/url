@@ -10,7 +10,7 @@ set -eu
 
 usage() {
   cat << 'HERE'
-Usage: url [-r]              [-nSN] [--] URLPATH [PARAMETERS]...
+Usage: url [-rs]             [-nSN] [--] URLPATH [PARAMETERS]...
 Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
 
   URLPATH: url path
@@ -21,6 +21,7 @@ Global options:
   -p, --printf            printf mode (default: build mode)
 
 Build mode options:
+  -s                      Sort keys
   -r                      Remove empty value key
 
 Printf mode options:
@@ -68,7 +69,7 @@ do_urlprintf() {
 #     SHURL_EOL: Characters used on new lines
 urlbuild() {
   LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" \
-    -v nullkey=$SHURL_REMOVENULLKEY \
+    -v nullkey="$SHURL_REMOVENULLKEY" -v sortkey="$SHURL_SORTKEY" \
   '
     function encode(map, str,   i, len, ret) {
       len = length(str); ret = ""
@@ -81,6 +82,18 @@ urlbuild() {
       for (i = 1; i < ARGC; i++) gsub(/\n/, eol, ARGV[i])
     }
 
+    function sort(ary,  len, min, tmp, i, j) {
+      len = 0
+      for (i in ary) len++
+      for (i = 0; i < len - 1; i++) {
+        min = i
+        for (j = i + 1; j < len; j++) {
+          if (ary[min] > ary[j]) min = j
+        }
+        tmp = ary[min]; ary[min] = ary[i]; ary[i] = tmp
+      }
+    }
+
     BEGIN {
       for(i = 0; i < 256; i++) {
         k = sprintf("%c", i); v = sprintf("%%%02X", i)
@@ -90,21 +103,22 @@ urlbuild() {
       if (length(space) > 0) uri[" "] = url[" "] = space
       if (length(eol) > 0) fix_eol(eol)
 
-      path = encode(uri, ARGV[1]); params = fragment = ""
+      path = encode(uri, ARGV[1]); params = fragment = ""; idx = 0
       for (i = 2; i < ARGC; i++) {
         if (sub(/^-/, "", ARGV[i])) {
-          if (nullkey && ARGV[i + 1] == "") {
-            i++
-          } else {
-            if (params) params = params "&"
-            params = params encode(url, ARGV[i]) "=" encode(url, ARGV[++i])
-          }
+          if (ARGV[++i] == "" && nullkey) continue
+          kv[idx++] = encode(url, ARGV[i - 1]) " " encode(url, ARGV[i])
         } else if (sub(/^=/, "", ARGV[i])) {
-          params = params encode(url, ARGV[i])
+          kv[idx++] = encode(url, ARGV[i])
         } else if (sub(/^#/, "", ARGV[i])) {
           fragment = fragment "#" encode(url, ARGV[i])
         }
       }
+
+      if (sortkey) sort(kv)
+      for (i = 0; i < idx; i++) sub(" ", "=", kv[i])
+      params = kv[0]
+      for (i = 1; i < idx; i++) params = params "&" kv[i]
 
       if (length(path) > 0 && length(params) > 0) path = path "?"
       print path params fragment
@@ -158,7 +172,7 @@ urlprintf() {
   )
 }
 
-SHURL_REMOVENULLKEY='' SHURL_DELIMITER='\n'
+SHURL_REMOVENULLKEY='' SHURL_SORTKEY='' SHURL_DELIMITER='\n'
 SHURL_SPACE='' SHURL_EOL='' SHURL_NONEWLINE=''
 mode='build'
 while [ $# -gt 0 ]; do
@@ -168,6 +182,7 @@ while [ $# -gt 0 ]; do
     -N) SHURL_EOL='\r\n' ;;
     -n) SHURL_NONEWLINE=1 ;;
     -r) SHURL_REMOVENULLKEY=1 ;;
+    -s) SHURL_SORTKEY=1 ;;
     -p | --printf) mode='printf' ;;
     -j | --join) SHURL_DELIMITER=${2:-} && shift ;;
     -h | --help) usage && exit 0 ;;
