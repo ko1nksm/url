@@ -10,7 +10,7 @@ set -eu
 
 usage() {
   cat << 'HERE'
-Usage: url                   [-nSN] [--] URLPATH [PARAMETERS]...
+Usage: url [-r]              [-nSN] [--] URLPATH [PARAMETERS]...
 Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
 
   URLPATH: url path
@@ -19,6 +19,9 @@ Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
 Global options:
   -n                      Do not print the trailing newline character
   -p, --printf            printf mode (default: build mode)
+
+Build mode options:
+  -r                      Remove empty value key
 
 Printf mode options:
   -j, --join DELIMITER    Joins strings with the delimiter (default: '\n')
@@ -64,7 +67,9 @@ do_urlprintf() {
 #     SHURL_SPACE: A character to use instead of %20
 #     SHURL_EOL: Characters used on new lines
 urlbuild() {
-  LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
+  LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" \
+    -v nullkey=$SHURL_REMOVENULLKEY \
+  '
     function encode(map, str,   i, len, ret) {
       len = length(str); ret = ""
       for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
@@ -88,8 +93,12 @@ urlbuild() {
       path = encode(uri, ARGV[1]); params = fragment = ""
       for (i = 2; i < ARGC; i++) {
         if (sub(/^-/, "", ARGV[i])) {
-          if (params) params = params "&"
-          params = params encode(url, ARGV[i]) "=" encode(url, ARGV[++i])
+          if (nullkey && ARGV[i + 1] == "") {
+            i++
+          } else {
+            if (params) params = params "&"
+            params = params encode(url, ARGV[i]) "=" encode(url, ARGV[++i])
+          }
         } else if (sub(/^=/, "", ARGV[i])) {
           params = params encode(url, ARGV[i])
         } else if (sub(/^#/, "", ARGV[i])) {
@@ -149,7 +158,8 @@ urlprintf() {
   )
 }
 
-SHURL_SPACE='' SHURL_EOL='' SHURL_DELIMITER='\n' SHURL_NONEWLINE=''
+SHURL_REMOVENULLKEY='' SHURL_DELIMITER='\n'
+SHURL_SPACE='' SHURL_EOL='' SHURL_NONEWLINE=''
 mode='build'
 while [ $# -gt 0 ]; do
   case $1 in
@@ -157,6 +167,7 @@ while [ $# -gt 0 ]; do
     -S) SHURL_SPACE='+' ;;
     -N) SHURL_EOL='\r\n' ;;
     -n) SHURL_NONEWLINE=1 ;;
+    -r) SHURL_REMOVENULLKEY=1 ;;
     -p | --printf) mode='printf' ;;
     -j | --join) SHURL_DELIMITER=${2:-} && shift ;;
     -h | --help) usage && exit 0 ;;
