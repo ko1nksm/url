@@ -54,7 +54,13 @@ do_urlbuild() {
 do_urlprintf() {
   format=$1 && shift
   [ $# -gt 0 ] || return 0
-  urlprintf "${SHURL_DELIMITER}${format}" "$@" | {
+  urlencode "$@" | {
+    set --
+    while IFS= read -r line; do
+      set -- "$@" "$line"
+    done
+    printf -- "${SHURL_DELIMITER}${format}" "$@"
+  } | {
     # shellcheck disable=SC2059
     delimiter=$(printf "${SHURL_DELIMITER}_")
     skip=$((${#delimiter} - 1))
@@ -139,24 +145,13 @@ urlbuild() {
   ' "$@"
 }
 
-# urlprintf FORMAT [ARGUMENTS]...
+# urlencode [ARGUMENTS]...
 #
-#   FORMAT: printf format
-#   ARGUMENTS: printf argument to be URL-encoded
+#   ARGUMENTS: argument to be URL-encoded
 #
 #   Variables:
 #     SHURL_SPACE: A character to use instead of %20
 #     SHURL_EOL: Characters used on new lines
-urlprintf() {
-  { shift && urlencode "$@"; } | (
-    set -- "$1"
-    while IFS= read -r line; do
-      set -- "$@" "$line"
-    done
-    printf -- "$@"
-  )
-}
-
 urlencode() {
   LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
     function encode(map, str,   i, len, ret) {
@@ -190,6 +185,13 @@ urlencode() {
   ' "$@"
 }
 
+# urldecode [ARGUMENTS]...
+#
+#   ARGUMENTS: argument to be URL-decoded
+#
+#   Variables:
+#     SHURL_SPACE: A character to use instead of %20
+#     SHURL_EOL: Characters used on new lines
 urldecode() {
   LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
     function decode(map, str,   ret) {
