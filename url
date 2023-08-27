@@ -64,8 +64,7 @@ do_urlprintf() {
     done
     printf -- "${SHURL_DELIMITER}${format}" "$@"
   } | {
-    # shellcheck disable=SC2059
-    delimiter=$(printf "${SHURL_DELIMITER}_")
+    delimiter=$(printf -- "${SHURL_DELIMITER}_")
     skip=$((${#delimiter} - 1))
     [ "$skip" -gt 0 ] && dd bs="$skip" count=1 >/dev/null 2>&1
     cat
@@ -252,7 +251,7 @@ done
 
 sanitize() {
   replace_all sanitize "$2" '%' '%%'
-  sanitize=$(printf "$sanitize"_) && sanitize=${sanitize%_}
+  sanitize=$(printf -- "$sanitize"_) && sanitize=${sanitize%_}
   replace_all sanitize "$sanitize" '%' '%%'
   replace_all "$1" "$sanitize" "\\" "\\\\"
 }
