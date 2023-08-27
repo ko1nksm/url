@@ -194,14 +194,21 @@ urldecode() {
   LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
     function decode(map, str,   ret) {
       while (match(str, /%[0-9A-Fa-f][0-9A-Fa-f]/)) {
-        ret = ret substr(str, 1, RSTART - 1) url[toupper(substr(str, RSTART + 1, 2))]
+        ret = ret substr(str, 1, RSTART - 1) url[substr(str, RSTART + 1, 2)]
         str = substr(str, RSTART + RLENGTH)
       }
       return ret str
     }
 
     BEGIN {
-      for (i = 0; i < 256; i++) url[sprintf("%02X", i)] = sprintf("%c", i)
+      for (i = 0; i < 256; i++) url[sprintf("%02x", i)] = sprintf("%c", i)
+
+      # Increase to 4 patterns to improve performance
+      for (k in url) {
+        m = substr(k, 1, 1); M = toupper(m)
+        l = substr(k, 2, 1); L = toupper(l)
+        url[m L] = url[M l] = url[M L] = url[k]
+      }
     }
 
     BEGIN {
