@@ -62,13 +62,24 @@ urlbuild URLPATH [ARGUMENTS]...
     SHURL_EOL: Characters used on new lines
 ```
 
-### urlprintf
+### urlencode
 
 ```txt
-urlprintf FORMAT [ARGUMENTS]...
+urlencode [ARGUMENTS]...
 
-  FORMAT: printf format
-  ARGUMENTS: printf argument to be URL-encoded
+  ARGUMENTS: argument to be URL-encoded
+
+  Variables:
+    SHURL_SPACE: A character to use instead of %20
+    SHURL_EOL: Characters used on new lines
+```
+
+### urldecode
+
+```txt
+urldecode [ARGUMENTS]...
+
+  ARGUMENTS: argument to be URL-decoded
 
   Variables:
     SHURL_SPACE: A character to use instead of %20
