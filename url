@@ -12,6 +12,8 @@ usage() {
   cat << 'HERE'
 Usage: url [-rs]             [-nSN] [--] URLPATH [PARAMETERS]...
 Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
+Usage: url -e                 [-SN] [--] [ARGUMENTS]...
+Usage: url -d                       [--] [ARGUMENTS]...
 
   URLPATH: url path
   PARAMETERS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
@@ -19,6 +21,8 @@ Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
 Global options:
   -n                      Do not print the trailing newline character
   -p, --printf            printf mode (default: build mode)
+  -e, --encode            URL Encoder mode
+  -d, --decode            URL Decoder mode
 
 Build mode options:
   -s                      Sort keys
@@ -49,6 +53,7 @@ do_urlbuild() {
 
 do_urlprintf() {
   format=$1 && shift
+  [ $# -gt 0 ] || return 0
   urlprintf "${SHURL_DELIMITER}${format}" "$@" | {
     # shellcheck disable=SC2059
     delimiter=$(printf "${SHURL_DELIMITER}_")
@@ -57,6 +62,14 @@ do_urlprintf() {
     cat
   }
   [ "$SHURL_NONEWLINE" ] || echo
+}
+
+do_urlencode() {
+  urlencode "$@"
+}
+
+do_urldecode() {
+  urldecode "$@"
 }
 
 # urlbuild URLPATH [ARGUMENTS]...
@@ -135,41 +148,71 @@ urlbuild() {
 #     SHURL_SPACE: A character to use instead of %20
 #     SHURL_EOL: Characters used on new lines
 urlprintf() {
-  [ $# -le 1 ] && return 0
-  {
-    shift
-    LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
-      function encode(map, str,   i, len, ret) {
-        len = length(str); ret = ""
-        for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
-        return ret
-      }
-
-      function fix_eol(eol,   i) {
-        for (i = 1; i < ARGC; i++) gsub(/\r\n/, "\n", ARGV[i])
-        for (i = 1; i < ARGC; i++) gsub(/\n/, eol, ARGV[i])
-      }
-
-      BEGIN {
-        for(i = 0; i < 256; i++) {
-          k = sprintf("%c", i); v = sprintf("%%%02X", i)
-          url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
-        }
-        if (length(space) > 0) uri[" "] = url[" "] = space
-        if (length(eol) > 0) fix_eol(eol)
-
-        for (i = 1; i < ARGC; i++) {
-          print encode(url, ARGV[i])
-        }
-      }
-    ' "$@"
-  } | (
+  { shift && urlencode "$@"; } | (
     set -- "$1"
     while IFS= read -r line; do
       set -- "$@" "$line"
     done
     printf -- "$@"
   )
+}
+
+urlencode() {
+  LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
+    function encode(map, str,   i, len, ret) {
+      len = length(str); ret = ""
+      for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
+      return ret
+    }
+
+    function fix_eol(eol,   i) {
+      for (i = 1; i < ARGC; i++) gsub(/\r\n/, "\n", ARGV[i])
+      for (i = 1; i < ARGC; i++) gsub(/\n/, eol, ARGV[i])
+    }
+
+    BEGIN {
+      for(i = 0; i < 256; i++) {
+        k = sprintf("%c", i); v = sprintf("%%%02X", i)
+        url[k] = (k ~ /[A-Za-z0-9_.~-]/) ? k : v
+      }
+      if (length(space) > 0) uri[" "] = url[" "] = space
+      if (length(eol) > 0) fix_eol(eol)
+    }
+
+    BEGIN {
+      for (i = 1; i < ARGC; i++) print encode(url, ARGV[i])
+      if (ARGC > 1) exit
+    }
+
+    {
+      print encode(url, $0)
+    }
+  ' "$@"
+}
+
+urldecode() {
+  LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
+    function decode(map, str,   ret) {
+      while (match(str, /%[0-9A-Fa-f][0-9A-Fa-f]/)) {
+        ret = ret substr(str, 1, RSTART - 1) url[toupper(substr(str, RSTART + 1, 2))]
+        str = substr(str, RSTART + RLENGTH)
+      }
+      return ret str
+    }
+
+    BEGIN {
+      for (i = 0; i < 256; i++) url[sprintf("%02X", i)] = sprintf("%c", i)
+    }
+
+    BEGIN {
+      for (i = 1; i < ARGC; i++) print decode(url, ARGV[i])
+      if (ARGC > 1) exit
+    }
+
+    {
+      print decode(url, $0)
+    }
+  ' "$@"
 }
 
 SHURL_REMOVENULLKEY='' SHURL_SORTKEY='' SHURL_DELIMITER='\n'
@@ -184,6 +227,8 @@ while [ $# -gt 0 ]; do
     -r) SHURL_REMOVENULLKEY=1 ;;
     -s) SHURL_SORTKEY=1 ;;
     -p | --printf) mode='printf' ;;
+    -e | --encode) mode='encode' ;;
+    -d | --decode) mode='decode' ;;
     -j | --join) SHURL_DELIMITER=${2:-} && shift ;;
     -h | --help) usage && exit 0 ;;
     --) shift && break ;;
