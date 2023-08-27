@@ -46,9 +46,12 @@ replace_all() {
 }
 
 do_urlbuild() {
-  url=$(urlbuild "$@")
-  printf '%s' "$url"
-  [ "$SHURL_NONEWLINE" ] || echo
+  if [ "$SHURL_NONEWLINE" ]; then
+    url=$(urlbuild "$@")
+    printf '%s' "$url"
+  else
+    urlbuild "$@"
+  fi
 }
 
 do_urlprintf() {
