@@ -30,7 +30,7 @@ Printf mode options:
   -j, --join DELIMITER    Joins strings with the delimiter (default: '\n')
 
 Encode mode options:
-  -m                      Multiline
+  -m                      Read multiple lines
 
 Character conversion Options:
   -S  Use + instead of %20
