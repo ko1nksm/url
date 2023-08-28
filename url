@@ -13,7 +13,7 @@ usage() {
 Usage: url [-rs]             [-nSN] [--] URLPATH [PARAMETERS]...
 Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
 Usage: url -e                 [-SN] [--] [ARGUMENTS]...
-Usage: url -d                       [--] [ARGUMENTS]...
+Usage: url -d                  [-S] [--] [ARGUMENTS]...
 
   URLPATH: url path
   PARAMETERS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
@@ -216,11 +216,15 @@ urldecode() {
     }
 
     BEGIN {
-      for (i = 1; i < ARGC; i++) print decode(url, ARGV[i])
+      for (i = 1; i < ARGC; i++) {
+        if (length(space) > 0) gsub(space, " ", ARGV[i])
+        print decode(url, ARGV[i])
+      }
       if (ARGC > 1) exit
     }
 
     {
+      if (length(space) > 0) gsub(/\+/, " ", $0)
       print decode(url, $0)
     }
   ' "$@"
