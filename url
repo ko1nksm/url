@@ -12,7 +12,7 @@ usage() {
   cat << 'HERE'
 Usage: url [-rs]             [-nSN] [--] URLPATH [PARAMETERS]...
 Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
-Usage: url -e                 [-SN] [--] [ARGUMENTS]...
+Usage: url -e [-m]            [-SN] [--] [ARGUMENTS]...
 Usage: url -d                  [-S] [--] [ARGUMENTS]...
 
   URLPATH: url path
@@ -21,8 +21,8 @@ Usage: url -d                  [-S] [--] [ARGUMENTS]...
 Global options:
   -n                      Do not print the trailing newline character
   -p, --printf            printf mode (default: build mode)
-  -e, --encode            URL Encoder mode
-  -d, --decode            URL Decoder mode
+  -e, --encode            URL Encoder mode (accepts stdin)
+  -d, --decode            URL Decoder mode (accepts stdin)
 
 Build mode options:
   -s                      Sort keys
@@ -30,6 +30,9 @@ Build mode options:
 
 Printf mode options:
   -j, --join DELIMITER    Joins strings with the delimiter (default: '\n')
+
+Encode mode options:
+  -m                      Multiline
 
 Character conversion Options:
   -S  Use + instead of %20
@@ -155,7 +158,8 @@ urlbuild() {
 #     SHURL_SPACE: A character to use instead of %20
 #     SHURL_EOL: Characters used on new lines
 urlencode() {
-  LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" '
+  LC_ALL=C awk -v space="$SHURL_SPACE" -v eol="$SHURL_EOL" \
+    -v multiline="$SHURL_MULTILINE" '
     function encode(map, str,   i, len, ret) {
       len = length(str); ret = ""
       for (i = 1; i <= len; i++) ret = ret map[substr(str, i, 1)]
@@ -179,6 +183,10 @@ urlencode() {
     BEGIN {
       for (i = 1; i < ARGC; i++) print encode(url, ARGV[i])
       if (ARGC > 1) exit
+      if (multiline) {
+        while (getline) printf "%s", encode(url, $0 "\n")
+        print ""
+      }
     }
 
     {
@@ -231,7 +239,7 @@ urldecode() {
 }
 
 SHURL_REMOVENULLKEY='' SHURL_SORTKEY='' SHURL_DELIMITER='\n'
-SHURL_SPACE='' SHURL_EOL='' SHURL_NONEWLINE=''
+SHURL_SPACE='' SHURL_EOL='' SHURL_NONEWLINE='' SHURL_MULTILINE=''
 mode='build'
 while [ $# -gt 0 ]; do
   case $1 in
@@ -241,6 +249,7 @@ while [ $# -gt 0 ]; do
     -n) SHURL_NONEWLINE=1 ;;
     -r) SHURL_REMOVENULLKEY=1 ;;
     -s) SHURL_SORTKEY=1 ;;
+    -m) SHURL_MULTILINE=1 ;;
     -p | --printf) mode='printf' ;;
     -e | --encode) mode='encode' ;;
     -d | --decode) mode='decode' ;;
