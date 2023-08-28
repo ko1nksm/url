@@ -241,6 +241,7 @@ urldecode() {
 SHURL_REMOVENULLKEY='' SHURL_SORTKEY='' SHURL_DELIMITER='\n'
 SHURL_SPACE='' SHURL_EOL='' SHURL_NONEWLINE='' SHURL_MULTILINE=''
 mode='build'
+[ $# -eq 0 ] && usage && exit 1
 while [ $# -gt 0 ]; do
   case $1 in
     -SN | -NS) SHURL_SPACE='+' SHURL_EOL='\r\n' ;;
