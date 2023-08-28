@@ -8,8 +8,10 @@ It is suitable for building URLs for `curl`, `wget`, etc.
 **The specification is not yet stable.**
 
 ```txt
-Usage: url                   [-nSN] [--] URLPATH [PARAMETERS]...
+Usage: url [-rs]             [-nSN] [--] URLPATH [PARAMETERS]...
 Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
+Usage: url -e [-m]            [-SN] [--] [ARGUMENTS]...
+Usage: url -d                  [-S] [--] [ARGUMENTS]...
 
   URLPATH: url path
   PARAMETERS: [ -KEY VALUE | =STRING | #FRAGMENT ]...
@@ -17,9 +19,18 @@ Usage: url -p [-j DELIMITER] [-nSN] [--] FORMAT  [ARGUMENTS]...
 Global options:
   -n                      Do not print the trailing newline character
   -p, --printf            printf mode (default: build mode)
+  -e, --encode            URL Encoder mode (accepts stdin)
+  -d, --decode            URL Decoder mode (accepts stdin)
+
+Build mode options:
+  -s                      Sort keys
+  -r                      Remove empty value key
 
 Printf mode options:
   -j, --join DELIMITER    Joins strings with the delimiter (default: '\n')
+
+Encode mode options:
+  -m                      Multiline
 
 Character conversion Options:
   -S  Use + instead of %20
